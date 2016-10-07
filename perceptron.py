@@ -1,3 +1,4 @@
+# NOTE: nearly done, but not complete and debugged yet!!!
 
 LEARNING_RATE=1
 TRAINING_FACES="training.txt"
