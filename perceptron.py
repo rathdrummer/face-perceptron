@@ -1,4 +1,6 @@
-LEARNING_RATE=0.000011 # Keep ~0.00001
+import random
+
+LEARNING_RATE=0.000011 # Keep ~0.00001. 0.000011 gives the highest value if re-testing the existing results
 TRAINING_FACES="training.txt"
 TRAINING_EXPRESSIONS="training-facit.txt"
 TEST_FACES="training.txt"
@@ -10,11 +12,12 @@ MISCHEVIOUS=3
 MAD=4
 
 def openFile(file):
+    """Does as it says on the tin"""
     with open(file) as f:
         return f.readlines()
 
 def parseFaces(file):
-    
+    """Returns a list of faces; each face is a list of rows, each row a list of integers (the pixels)"""
     lines=openFile(file)
 
     currentImage = 0
@@ -34,6 +37,7 @@ def parseFaces(file):
     return faces
 
 def parseExpressions(file):
+    """Returns the corresponding expressions as a list of integers. 1:Happy, 2:Sad, 3:Mischevious, 4:Mad"""
     lines=openFile(file)
 
     currentExpression=0
@@ -49,7 +53,7 @@ def parseExpressions(file):
     return expressions
 
 def outputNodeValue(inputList,weightList):
-
+    """Calculates the output for the node produced by weightList as per the input """
     outputValue=0
     for i in range(20):
         for j in range(20):
@@ -58,7 +62,6 @@ def outputNodeValue(inputList,weightList):
 
 if __name__ == "__main__":
 
-
     # -- Establish Neural Network -- #
     
     weights=list()
@@ -66,7 +69,7 @@ if __name__ == "__main__":
     for i in range(5):
         weights.append(list())
 
-    # Create weights for each of the four output nodes
+    # Create weights for each of the four output nodes    
     for row in range(20):
         weights[HAPPY].append(list())
         weights[SAD].append(list())
@@ -85,7 +88,7 @@ if __name__ == "__main__":
 
     trainingFaces=parseFaces(TRAINING_FACES)
     trainingExpressions=parseExpressions(TRAINING_EXPRESSIONS)
-    
+
     for i in range(len(trainingFaces)):
         # First calculate the output for the face and its expression
         currentExpression=trainingExpressions[i]
@@ -94,20 +97,17 @@ if __name__ == "__main__":
         output=[0,0,0,0,0]
         error=[0,0,0,0,0]
 
-        # Get the errors from the desired outputs (1 for the current expression, 0 for others)
+        # Get the errors from the desired outputs (desired outputs are for the current corresponding expression, 0 for others)
         for expression in [HAPPY,SAD,MISCHEVIOUS,MAD]:
-
             output[expression]=outputNodeValue(face,weights[expression])
-            error[expression]=-output[expression]
-            
+            error[expression]= 0 - output[expression]
         error[currentExpression] = 1 - output[currentExpression]
 
-        
         # Which we use to adjust each weight for the expression        
         for row in range(20):
             for node in range(20):
                 for expression in [HAPPY,SAD,MISCHEVIOUS,MAD]:
-                    weightDifference = LEARNING_RATE*float(error[expression])*float(face[row][node])
+                    weightDifference = LEARNING_RATE*error[expression]*face[row][node]
                     weights[expression][row][node] += float(weightDifference)
 
     # Training complete, weights defined.
@@ -119,12 +119,12 @@ if __name__ == "__main__":
     testFaces=parseFaces(TEST_FACES)
     testExpressions=parseExpressions(TEST_EXPRESSIONS)
 
-    success=0
-    failure=0
-    total=0
+    success,failure = 0,0
 
+    # Choose 100 faces from training faces
+    chosenFaces=[random.randint(0,299) for i in range(100)]
 
-    for i in range(len(testFaces)):
+    for i in chosenFaces:
         output=[0,0,0,0,0]
         result=0
 
@@ -138,5 +138,5 @@ if __name__ == "__main__":
         else:
             failure+=1
             
-    print("Out of ",success+failure," faces tested, ",success," successfully identified the expression.")
-    print(success*100/(success+failure),"% accuracy.")
+    print("Out of",success+failure,"faces tested,",success,"expressions were successfully identified.")
+#    print(success*100/(success+failure),"% accuracy.")
