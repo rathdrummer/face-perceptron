@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     testFaces=parseFaces(sys.argv[3])
 
-    for i in len(testFaces):
+    for i in range(len(testFaces)):
         output=[0,0,0,0,0]
         result=0
 
@@ -123,5 +123,9 @@ if __name__ == "__main__":
             if output[expression]>output[result]:
                 result=expression
         
-        print("Image",i," ",expression)
+        output="Image"
+        output+=str(i+1)
+        output+=" "
+        output+=str(result)
+        print output
     
