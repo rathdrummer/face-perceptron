@@ -1,10 +1,12 @@
 import sys, random
+from math import exp
 
-LEARNING_RATE=0.000011 # Keep ~0.00001. 0.000011 gives the highest value if re-testing the existing results
+LEARNING_RATE=0.0000011 # Keep ~0.00001. 0.000011 gives the highest value if re-testing the existing results
+TRAINING_LOOPS=1000
 
 HAPPY=1
 SAD=2
-MISCHEVIOUS=3
+MISCHEIVOUS=3
 MAD=4
 
 def openFile(file):
@@ -18,12 +20,18 @@ def parseFaces(file):
 
     currentImage = 0
     faces=list()
+    # We need a list of images, but some files don't start at image 0. So we remove the initial image number from the current index, to give us a list index starting at 0. 
+    firstImageFound=False
+    firstImage=0
 
     for line in lines:
         line=line.strip()
         if line != "" and line[0] != '#':
             if line[:5] == 'Image':
-                currentImage = int(line[5:])-1
+                if not firstImageFound:
+                    firstImage=int(line[5:])
+                    firstImageFound=True
+                currentImage = int(line[5:])-firstImage
                 faces.append(list())
             else:
                 row=line.split(" ")
@@ -49,12 +57,16 @@ def parseExpressions(file):
     return expressions
 
 def outputNodeValue(inputList,weightList):
-    """Calculates the output for the node produced by weightList as per the input. This is the neuron activation function"""
+    """Calculates the output for the node produced by weightList as per the input. This is the neuron output calculator"""
     outputValue=0
     for i in range(20):
         for j in range(20):
             outputValue += (inputList[i][j]*weightList[i][j])
-    return outputValue
+    return sigmoid(outputValue)
+
+def sigmoid(x):
+    """A sigmoid function - the activation function of the neural network"""
+    return 1/(1+exp(-x))
 
 if __name__ == "__main__":
 
@@ -69,12 +81,12 @@ if __name__ == "__main__":
     for row in range(20):
         weights[HAPPY].append(list())
         weights[SAD].append(list())
-        weights[MISCHEVIOUS].append(list())
+        weights[MISCHEIVOUS].append(list())
         weights[MAD].append(list())
         for node in range(20):
             weights[HAPPY][row].append(0)
             weights[SAD][row].append(0)
-            weights[MISCHEVIOUS][row].append(0)
+            weights[MISCHEIVOUS][row].append(0)
             weights[MAD][row].append(0)
 
     # Neural network established.
@@ -85,28 +97,29 @@ if __name__ == "__main__":
     trainingFaces=parseFaces(sys.argv[1])
     trainingExpressions=parseExpressions(sys.argv[2])
 
-    for i in range(len(trainingFaces)):
-        # First calculate the output for the face and its expression
-        currentExpression=trainingExpressions[i]
-        face=trainingFaces[i]
+    for iterations in range(TRAINING_LOOPS):
+        for i in range(len(trainingFaces)):
+            # First calculate the output for the face and its expression
+            currentExpression=trainingExpressions[i]
+            face=trainingFaces[i]
 
-        output=[0,0,0,0,0]
-        error=[0,0,0,0,0]
+            output=[0,0,0,0,0]
+            error=[0,0,0,0,0]
 
-        # Get the errors from the desired outputs (desired outputs are for the current corresponding expression, 0 for others)
-        for expression in [HAPPY,SAD,MISCHEVIOUS,MAD]:
-            output[expression]=outputNodeValue(face,weights[expression])
-            error[expression]= 0 - output[expression]
-        error[currentExpression] = 1 - output[currentExpression]
+            # Get the errors from the desired outputs (desired outputs are for the current corresponding expression, 0 for others)
+            for expression in [HAPPY,SAD,MISCHEIVOUS,MAD]:
+                output[expression]=outputNodeValue(face,weights[expression])
+                error[expression]= 0 - output[expression]
+            error[currentExpression] = 1 - output[currentExpression]
 
-        # Which we use to adjust each weight for the expression        
-        for row in range(20):
-            for node in range(20):
-                for expression in [HAPPY,SAD,MISCHEVIOUS,MAD]:
-                    weightDifference = LEARNING_RATE*error[expression]*face[row][node]
-                    weights[expression][row][node] += float(weightDifference)
+            # Which we use to adjust each weight for the expression        
+            for row in range(20):
+                for node in range(20):
+                    for expression in [HAPPY,SAD,MISCHEIVOUS,MAD]:
+                        weightDifference = LEARNING_RATE*error[expression]*face[row][node]
+                        weights[expression][row][node] += float(weightDifference)
 
-    # Training complete, weights defined.
+        # Training complete, weights defined.
 
 
 
@@ -118,7 +131,7 @@ if __name__ == "__main__":
         output=[0,0,0,0,0]
         result=0
 
-        for expression in [HAPPY,SAD,MISCHEVIOUS,MAD]:
+        for expression in [HAPPY,SAD,MISCHEIVOUS,MAD]:
             output[expression]=outputNodeValue(testFaces[i],weights[expression])
             if output[expression]>output[result]:
                 result=expression
